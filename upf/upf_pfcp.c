@@ -388,6 +388,9 @@ pfcp_new_association (session_handle_t session_handle,
       break;
     }
 
+  vlib_increment_simple_counter (&gtm->upf_simple_counters[UPF_ASSOC_COUNTER],
+				 vlib_get_thread_index (), 0, 1);
+
   return n;
 }
 
@@ -442,6 +445,10 @@ pfcp_release_association (upf_node_assoc_t * n)
     pfcp_msg_pool_put (psm, msg);
   }));
   /* *INDENT-ON* */
+
+  vlib_decrement_simple_counter (&gtm->upf_simple_counters[UPF_ASSOC_COUNTER],
+				 vlib_get_thread_index (), 0, 1);
+
 }
 
 static void
@@ -542,6 +549,10 @@ pfcp_create_session (upf_node_assoc_t * assoc,
   hash_set (gtm->session_by_id, cp_seid, sx - gtm->sessions);
 
   vlib_worker_thread_barrier_release (vm);
+
+  vlib_increment_simple_counter (&gtm->upf_simple_counters
+				 [UPF_SESSIONS_COUNTER],
+				 vlib_get_thread_index (), 0, 1);
 
   return sx;
 }
@@ -1030,6 +1041,10 @@ pfcp_disable_session (upf_session_t * sx, int drop_msgs)
       /* *INDENT-ON* */
 
     }
+
+  vlib_decrement_simple_counter (&gtm->upf_simple_counters
+				 [UPF_SESSIONS_COUNTER],
+				 vlib_get_thread_index (), 0, 1);
 
   return 0;
 }
