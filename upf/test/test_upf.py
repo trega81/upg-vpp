@@ -434,6 +434,16 @@ class PFCPHelper(object):
         ]), PFCPSessionDeletionResponse, seid=self.cur_seid)
         self.assertEqual(CauseValues[resp[IE_Cause].cause], "Request accepted")
 
+    def verify_upg_counters(self, expected_assoc=0, expected_sessions=0,
+                            expected_flows=0):
+        flow_counter = self.statistics.dump(self.statistics.ls('/upf/total_flows'))
+        session_counter = self.statistics.dump(self.statistics.ls('/upf/total_sessions'))
+        association_counter = self.statistics.dump(self.statistics.ls('/upf/total_assoc'))
+        # Counter dir is implemented as a per-cpu vector of vectors
+        self.assertEqual(flow_counter['/upf/total_flows'][0][0], expected_flows)
+        self.assertEqual(session_counter['/upf/total_sessions'][0][0], expected_sessions)
+        self.assertEqual(association_counter['/upf/total_assoc'][0][0], expected_assoc)
+
 class TestTDFBase(PFCPHelper):
     """Base TDF Test"""
 
@@ -503,6 +513,7 @@ class TestTDFBase(PFCPHelper):
             self.verify_drop()
             # FIXME: the IP redirect is currently also handled by the proxy
             # self.verify_redirect()
+            self.verify_upg_counters(expected_flows=3, expected_assoc=1, expected_sessions=1)
             self.delete_session()
             self.verify_no_forwarding()
         finally:
